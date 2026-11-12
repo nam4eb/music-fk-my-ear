@@ -1,0 +1,23 @@
+{
+  "name": "vibebox-fullstack",
+  "version": "2.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run build:core && npm run dev -w @vibebox/web",
+    "dev:api": "npm run build:core && npm run dev -w @vibebox/api",
+    "build": "npm run build:core && npm run build:web && npm run build:api",
+    "build:web": "npm run build -w @vibebox/web",
+    "build:api": "npm run build -w @vibebox/api",
+    "start:api": "npm run start -w @vibebox/api",
+    "test": "npm run test -w @vibebox/core",
+    "check:core": "npm run typecheck -w @vibebox/core",
+    "build:core": "npm run build -w @vibebox/core"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

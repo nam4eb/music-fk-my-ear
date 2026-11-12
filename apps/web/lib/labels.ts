@@ -1,0 +1,65 @@
+export type UiLanguage = 'vi' | 'en';
+export const UI = {
+  vi: {
+    discover: 'Khám phá', library: 'Thư viện', playlists: 'Playlist', insights: 'Thống kê', settings: 'Cài đặt',
+    slogan: 'Âm nhạc đúng gu bạn.', greeting: 'Nhạc cho hôm nay', subheading: 'Một chút nhạc hay, một ngày dễ chịu hơn.',
+    daily: 'Daily Mix của bạn', dailyInfo: 'Giai điệu được gợi ý từ thời điểm và lịch sử nghe.',
+    play: 'Phát', playMix: 'Phát Daily Mix', upload: 'Thêm nhạc', search: 'Tìm bài hát, ca sĩ, album...',
+    moods: 'Chọn tâm trạng', recentlyAdded: 'Nhạc mới thêm', allSongs: 'Tất cả bài hát', liked: 'Yêu thích',
+    songs: 'bài hát', genre: 'Thể loại', language: 'Ngôn ngữ nhạc', allGenres: 'Mọi thể loại', allLanguages: 'Mọi ngôn ngữ',
+    noSongs: 'Thư viện vẫn còn trống', noSongsTip: 'Tải các file nhạc của bạn lên để bắt đầu nghe.',
+    title: 'Tên bài hát', artist: 'Ca sĩ', album: 'Album', year: 'Năm', mood: 'Vibe / Tâm trạng',
+    edit: 'Chỉnh thông tin', addPlaylist: 'Thêm vào playlist', remove: 'Xóa', save: 'Lưu', cancel: 'Hủy',
+    createPlaylist: 'Tạo playlist', playlistName: 'Tên playlist', description: 'Mô tả', emptyPlaylist: 'Chưa có bài hát trong playlist này.',
+    uploadInstructions: 'Chọn MP3, M4A, WAV, FLAC, OGG, Opus hoặc WebM. Bạn có thể chọn nhiều file.',
+    listening: 'Thói quen nghe nhạc', week: 'Trong 7 ngày gần đây', plays: 'Lượt phát', minutes: 'Phút nghe', favoriteGenre: 'Thể loại yêu thích', favoriteLanguage: 'Ngôn ngữ yêu thích',
+    account: 'Tài khoản cá nhân', logout: 'Đăng xuất', signIn: 'Đăng nhập', setup: 'Tạo tài khoản quản trị đầu tiên',
+    email: 'Email', password: 'Mật khẩu', setupToken: 'Mã thiết lập từ API .env', loginHint: 'Nhạc của bạn được lưu riêng tư, không công khai.',
+    repeatOff: 'Không lặp', repeatAll: 'Lặp playlist', repeatOne: 'Lặp bài', noResults: 'Không tìm thấy bài hát phù hợp.',
+    confirmDelete: 'Xóa bài hát này khỏi thư viện và kho lưu trữ?', confirmPlaylistDelete: 'Xóa playlist này?',
+    cover: 'Đổi ảnh bìa', storage: 'Nơi lưu file', API: 'Máy chủ API', about: 'VibeBox 2.0 • Dành riêng cho bạn',
+    refresh: 'Tải lại', uploading: 'Đang tải lên', unknown: 'Chưa rõ', useApp: 'Mở thư viện', nowPlaying: 'Đang phát', recommended: 'Dành cho bạn',
+    emptyPlaylistList: 'Chưa có playlist. Tạo một playlist để gom những bài bạn thích.', loading: 'Đang tải thư viện...',
+    errorTitle: 'Không kết nối được máy chủ', retry: 'Thử lại', unauthorized: 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.',
+    added: 'Đã thêm vào playlist', deleted: 'Đã xóa', saved: 'Đã lưu thay đổi', uploaded: 'Đã tải nhạc lên',
+    musicLang: 'Nhạc theo quốc gia', uploadTip: 'File phải là nhạc mà bạn có quyền sử dụng.'
+  },
+  en: {
+    discover: 'Discover', library: 'Library', playlists: 'Playlists', insights: 'Insights', settings: 'Settings',
+    slogan: 'Your music. Your mood.', greeting: 'Soundtrack for today', subheading: 'The right music makes every day better.',
+    daily: 'Your Daily Mix', dailyInfo: 'Picked from your listening habits and time of day.',
+    play: 'Play', playMix: 'Play Daily Mix', upload: 'Add music', search: 'Search songs, artists, albums...',
+    moods: 'Pick a mood', recentlyAdded: 'Recently added', allSongs: 'All tracks', liked: 'Favorites',
+    songs: 'tracks', genre: 'Genre', language: 'Music language', allGenres: 'All genres', allLanguages: 'All languages',
+    noSongs: 'Your library is empty', noSongsTip: 'Upload your audio files to begin listening.',
+    title: 'Track title', artist: 'Artist', album: 'Album', year: 'Year', mood: 'Mood / vibe',
+    edit: 'Edit details', addPlaylist: 'Add to playlist', remove: 'Delete', save: 'Save', cancel: 'Cancel',
+    createPlaylist: 'Create playlist', playlistName: 'Playlist name', description: 'Description', emptyPlaylist: 'This playlist is empty.',
+    uploadInstructions: 'Select MP3, M4A, WAV, FLAC, OGG, Opus or WebM files. Multiple files allowed.',
+    listening: 'Listening habits', week: 'Last 7 days', plays: 'Plays', minutes: 'Minutes', favoriteGenre: 'Favorite genre', favoriteLanguage: 'Favorite language',
+    account: 'Your personal account', logout: 'Sign out', signIn: 'Sign in', setup: 'Create your first owner account',
+    email: 'Email', password: 'Password', setupToken: 'Setup token from API .env', loginHint: 'Your music stays private, not publicly shared.',
+    repeatOff: 'Repeat off', repeatAll: 'Repeat playlist', repeatOne: 'Repeat one', noResults: 'No matching tracks.',
+    confirmDelete: 'Delete this track and its file?', confirmPlaylistDelete: 'Delete this playlist?',
+    cover: 'Change artwork', storage: 'File storage', API: 'API server', about: 'VibeBox 2.0 • Yours alone',
+    refresh: 'Refresh', uploading: 'Uploading', unknown: 'Unknown', useApp: 'Open library', nowPlaying: 'Now playing', recommended: 'Made for you',
+    emptyPlaylistList: 'No playlists yet. Create one for music you love.', loading: 'Loading your music...',
+    errorTitle: 'Cannot reach the API server', retry: 'Try again', unauthorized: 'Session expired. Please sign in again.',
+    added: 'Added to playlist', deleted: 'Deleted', saved: 'Changes saved', uploaded: 'Music uploaded',
+    musicLang: 'Music by language', uploadTip: 'Only upload music you have permission to use.'
+  }
+};
+export const MOOD_LABELS: Record<string, { vi: string; en: string; emoji: string }> = {
+  chill: { vi: 'Thư giãn', en: 'Chill', emoji: '☁️' }, focus: { vi: 'Tập trung', en: 'Focus', emoji: '🎧' },
+  happy: { vi: 'Vui vẻ', en: 'Happy', emoji: '🌞' }, sad: { vi: 'Tâm sự', en: 'Sad', emoji: '🌧️' },
+  energy: { vi: 'Năng lượng', en: 'Energy', emoji: '⚡' }, romantic: { vi: 'Lãng mạn', en: 'Romantic', emoji: '💗' },
+  sleep: { vi: 'Dễ ngủ', en: 'Sleep', emoji: '🌙' }, nostalgic: { vi: 'Hoài niệm', en: 'Nostalgic', emoji: '📼' },
+  party: { vi: 'Tiệc tùng', en: 'Party', emoji: '🎉' }, rainy: { vi: 'Ngày mưa', en: 'Rainy', emoji: '🌦️' }
+};
+export const LANGUAGE_LABELS: Record<string, { vi: string; en: string; emoji: string }> = {
+  vi: { vi: 'Việt Nam', en: 'Vietnamese', emoji: '🇻🇳' }, en: { vi: 'Âu Mỹ / Tiếng Anh', en: 'English', emoji: '🇺🇸' },
+  ko: { vi: 'Hàn Quốc', en: 'Korean', emoji: '🇰🇷' }, ja: { vi: 'Nhật Bản', en: 'Japanese', emoji: '🇯🇵' },
+  zh: { vi: 'Trung Quốc', en: 'Chinese', emoji: '🇨🇳' }, fr: { vi: 'Pháp', en: 'French', emoji: '🇫🇷' },
+  es: { vi: 'Tây Ban Nha', en: 'Spanish', emoji: '🇪🇸' }, other: { vi: 'Khác', en: 'Other', emoji: '🌍' },
+  unknown: { vi: 'Chưa rõ', en: 'Unknown', emoji: '🌐' }
+};
