@@ -1,4 +1,4 @@
-# HƯỚNG DẪN TRIỂN KHAI VIBEBOX 2.0
+# HƯỚNG DẪN TRIỂN KHAI VIBEBOX 2.1
 
 ## 1. Kiến trúc triển khai (đề xuất cho một người dùng)
 
@@ -20,6 +20,7 @@ Từ thư mục gốc:
 docker compose up -d db
 # Lần đầu, tạo bảng. An toàn khi chạy lại với IF NOT EXISTS.
 docker compose exec -T db psql -U vibebox -d vibebox < apps/api/sql/001_init.sql
+docker compose exec -T db psql -U vibebox -d vibebox < apps/api/sql/002_google_owner_auth.sql
 npm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.local.example apps/web/.env.local
@@ -28,10 +29,11 @@ cp apps/web/.env.local.example apps/web/.env.local
 Windows PowerShell dùng `Copy-Item` thay `cp`. Đối với lệnh SQL, PowerShell chuyển hướng `<` không hoạt động trực tiếp: sử dụng:
 
 ```powershell
-Get-Content apps/api/sql/001_init.sql -Raw | docker compose exec -T db psql -U vibebox -d vibebox
+Get-Content apps/api/sql/001_init.sql -Raw | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U vibebox -d vibebox
+Get-Content apps/api/sql/002_google_owner_auth.sql -Raw | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U vibebox -d vibebox
 ```
 
-Trong `apps/api/.env` đổi `JWT_SECRET` thành chuỗi **ngẫu nhiên >=32 ký tự**; đổi `SETUP_TOKEN` thành mã ngẫu nhiên riêng, ít nhất 16 ký tự; giữ `STORAGE_DRIVER=local` để phát file từ máy; không public API này.
+Trong `apps/api/.env` đổi `JWT_SECRET` thành chuỗi **ngẫu nhiên >=32 ký tự**, đặt `GOOGLE_CLIENT_ID` và `GOOGLE_OWNER_EMAIL` theo phần Google Sign-In dưới đây; giữ `STORAGE_DRIVER=local` trong giai đoạn thử nghiệm. **Không dùng `SETUP_TOKEN` nữa.** Nếu database đã có owner từ bản cũ, chạy migration 002 để nối với tài khoản Google mà không thay ID.
 
 Mở hai terminal tại thư mục gốc:
 
@@ -40,16 +42,39 @@ npm run dev:api
 npm run dev:web
 ```
 
-Truy cập **http://localhost:3000**; giao diện lần đầu yêu cầu **email, password >= 12 ký tự, setup token** trùng `.env` của API. Tài khoản owner chỉ được tạo **một lần**. Sau khi tạo, form chuyển thành login thường.
+Truy cập **http://localhost:3000**; chọn **Continue with Google**. Chỉ tài khoản email trùng `GOOGLE_OWNER_EMAIL` mới được phép đăng nhập. Nếu database trống, lần đầu sẽ tạo owner. Nếu database đã có owner với cùng email, app giữ nguyên owner ID và toàn bộ dữ liệu. Nếu email khác, app từ chối thay vì tự chuyển quyền sở hữu.
 
 Sau login: chọn Upload, tải nhạc, bấm bài để phát, chỉnh tags bằng `•••`, tạo playlist, nghe Daily Mix và xem thống kê. File ở `apps/api/.music-uploads` khi dùng local mode (vì npm workspace chạy từ thư mục API).
+
+## 2A. Cấu hình Google Sign-In (bắt buộc)
+
+1. Vào **[Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)**, tạo/chọn Google Cloud project.
+2. Cấu hình **OAuth consent screen** (Google Auth Platform → Branding/Audience). Nếu ở chế độ **Testing**, thêm chính tài khoản Google chủ sở hữu vào **Test users**.
+3. Tạo **OAuth client ID → Web application**, đặt **Authorized JavaScript origins**: `http://localhost:3000` cho local. Khi deploy, thêm chính origin HTTPS của website, ví dụ `https://nam4eb.github.io` (không thêm đường dẫn `/vibebox`). Không cần Redirect URI cho nút Google Identity Services theo dạng callback JavaScript.
+4. Copy **Client ID** (đuôi `.apps.googleusercontent.com`) vào `apps/api/.env`. KHÔNG cần và KHÔNG đặt Google Client Secret ở frontend.
+5. Chỉ định email Google được phép làm chủ thư viện. Google đăng nhập xác thực qua Google; backend đối chiếu email đã xác minh và Google `sub`. Dữ liệu không tự chuyển sang tài khoản khác.
+
+```dotenv
+# apps/api/.env
+JWT_SECRET=YOUR_RANDOM_SECRET_AT_LEAST_32_CHARACTERS
+GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_OWNER_EMAIL=you@gmail.com
+CORS_ORIGINS=http://localhost:3000
+```
+
+Với Docker PostgreSQL host port `5433`, đặt `DATABASE_URL=postgresql://vibebox:vibebox_dev_password@127.0.0.1:5433/vibebox` (nếu API chạy trên Windows). Chạy cả 2 migration trên cùng DB. **Restart Express sau khi chỉnh `.env`**.
+
+**Khắc phục sự cố:** `origin_mismatch` → kiểm tra origin trong Google Cloud; `403 not configured owner` → sai `GOOGLE_OWNER_EMAIL`; `403 existing owner` → tài khoản cũ khác email, DB không thay đổi; `401 Google verification failed` → ID Token/Client ID không phù hợp. Nút Google không hiển thị → trình duyệt chặn script GIS hoặc Client ID chưa hợp lệ. Nếu dùng HTTPS domain mới, thêm origin vào Google Cloud và CORS của API.
+
+> Không cần `SETUP_TOKEN`, mật khẩu của VibeBox hay Google Client Secret. Khi di chuyển từ V2 cũ, nên đổi `JWT_SECRET` để vô hiệu hóa các phiên cũ. Đừng xóa volume PostgreSQL hoặc chạy `docker compose down -v`.
 
 ## 3. Neon PostgreSQL
 
 1. Tạo Neon project tại https://neon.com/, lấy Postgres **connection string**; nên chọn pooled connection URL cho API dạng serverless nếu khuyến nghị bởi Neon.
 2. Vào Neon SQL Editor, chạy nội dung `apps/api/sql/001_init.sql`.
-3. Lưu connection string vào biến môi trường `DATABASE_URL` **trên host API**, không đưa vào Next.js/GitHub Pages.
-4. Không chạy script tạo bảng trên database chứa ứng dụng khác mà không kiểm tra trước.
+3. Chạy cả `apps/api/sql/002_google_owner_auth.sql` trong SQL Editor sau file 001 (kể cả khi đã tồn tại database V2).
+4. Lưu connection string vào biến môi trường `DATABASE_URL` **trên host API**, không đưa vào Next.js/GitHub Pages.
+5. Không chạy script tạo bảng trên database chứa ứng dụng khác mà không kiểm tra trước.
 
 ## 4. Cloudflare R2
 
@@ -82,7 +107,8 @@ NODE_ENV=production
 PORT=4000
 DATABASE_URL=postgresql://...  # Neon URL
 JWT_SECRET=...                 # random 32+ chars
-SETUP_TOKEN=...                # private, random 16+ chars
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_OWNER_EMAIL=you@gmail.com
 CORS_ORIGINS=https://nam4eb.github.io
 API_PUBLIC_URL=https://YOUR-RENDER-SERVICE.onrender.com
 STORAGE_DRIVER=r2
@@ -93,7 +119,7 @@ R2_SECRET_ACCESS_KEY=...
 MAX_UPLOAD_MB=100
 ```
 
-Render thường cung cấp PORT tự động; cấu hình PORT nếu được phép, hoặc bỏ nó để dùng biến PORT của Render. `GET /health` phải trả JSON `ok:true`. Nếu cần `POST /api/auth/setup`, form chỉ cho tạo tài khoản khi database **chưa có user**; giữ SETUP_TOKEN bí mật.
+Render thường cung cấp PORT tự động; cấu hình PORT nếu được phép, hoặc bỏ nó để dùng biến PORT của Render. `GET /health` phải trả JSON `ok:true`. API dùng `POST /api/auth/google`, xác minh Google ID Token trước khi tạo hoặc nối owner. Không còn `/api/auth/setup` hoặc `/api/auth/login`.
 
 ### Lưu ý Render Free
 
@@ -105,14 +131,14 @@ Free Web Services có thể spin down sau 15 phút không hoạt động, lần 
 2. Commit toàn bộ project (đặc biệt `.github/workflows/deploy-pages.yml`). **Không commit `.env`**.
 3. Trong repo → Settings → Secrets and variables → Actions → Variables → New repository variable:
    - `NEXT_PUBLIC_API_URL=https://YOUR-RENDER-SERVICE.onrender.com` (không có slash cuối).
-4. Repo → Settings → Pages → Source: **GitHub Actions**.
+4. Tạo Google OAuth Client loại Web application; thêm origin `https://nam4eb.github.io` và điền `GOOGLE_CLIENT_ID` trên backend. Repo → Settings → Pages → Source: **GitHub Actions**.
 5. Push nhánh `main`, workflow build `@vibebox/core`, test, build Next static export và publish `apps/web/out`.
 6. Mở `https://YOUR-USERNAME.github.io/vibebox/`. Trên iOS Safari: Share → Add to Home Screen. Trên Android Chrome: Add to Home screen / Install app.
 7. Frontend build-time API URL là **public** (không đặt secrets vào `NEXT_PUBLIC_*`). Backend CORS phải whitelist chính xác origin GitHub Pages; R2 CORS cũng vậy.
 
 ## 7. Các vấn đề bảo mật và vận hành
 
-- Mật khẩu được bcrypt hash trước khi lưu. JWT 7 ngày lưu trong **localStorage** để hỗ trợ GitHub Pages và API khác origin; chỉ đăng nhập trên thiết bị đáng tin cậy. Thiết kế production nhạy cảm hơn nên ưu tiên chung origin và HttpOnly cookie.
+- Đăng nhập Google không dùng mật khẩu app. JWT 7 ngày lưu trong **localStorage** để hỗ trợ GitHub Pages và API khác origin; chỉ đăng nhập trên thiết bị đáng tin cậy. Thiết kế production nhạy cảm hơn nên ưu tiên chung origin và HttpOnly cookie.
 - Xóa localStorage hoặc đăng xuất sẽ xóa token, **không xóa nhạc trong R2**.
 - CORS và URL ký riêng ngăn public trực tiếp. Tuy nhiên, bất kỳ ai có signed URL còn hạn đều có thể truy cập file đó.
 - Đừng upload tài liệu hoặc nhạc không có quyền sử dụng. VibeBox không cung cấp nhạc từ các nguồn có bản quyền.
@@ -124,8 +150,9 @@ Free Web Services có thể spin down sau 15 phút không hoạt động, lần 
 ## 8. Kiểm tra đầu cuối sau khi deploy
 
 - [ ] API `/health` trả `ok:true`.
-- [ ] SQL migration xong và `/api/config` trả `needsSetup:true` trước tạo owner.
-- [ ] Tạo owner lần đầu, đăng xuất rồi đăng nhập lại.
+- [ ] SQL 001 và 002 đã chạy; `/api/config` trả `googleClientId` đúng.
+- [ ] Đăng nhập Google với email owner, đăng xuất và đăng nhập lại. Thử email khác phải bị từ chối (403).
+- [ ] Nếu đã có owner từ V2, kiểm tra ID người dùng và toàn bộ bài hát, playlist được giữ nguyên.
 - [ ] Upload một bài MP3, hoàn tất không có lỗi CORS.
 - [ ] Phát, tua, next, pause, shuffle và repeat.
 - [ ] Reload và xác nhận track vẫn tồn tại.

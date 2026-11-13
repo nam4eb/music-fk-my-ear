@@ -7,11 +7,16 @@ import jwt from 'jsonwebtoken';
 import type { Request, Response } from 'express';
 import { config } from './config.js';
 
-const client = config.STORAGE_DRIVER === 'r2' ? new S3Client({
+const client = (config.R2_ENDPOINT && config.R2_BUCKET && config.R2_ACCESS_KEY_ID && config.R2_SECRET_ACCESS_KEY) ? new S3Client({
   region: 'auto', endpoint: config.R2_ENDPOINT!, forcePathStyle: true,
   credentials: { accessKeyId: config.R2_ACCESS_KEY_ID!, secretAccessKey: config.R2_SECRET_ACCESS_KEY! }
 }) : null;
 const root = path.resolve(config.LOCAL_STORAGE_DIR);
+export type StorageBackend = 'local' | 'r2';
+export function r2Client() {
+  if (!client) throw new Error('Cloudflare R2 credentials are missing on the API host');
+  return client;
+}
 const allowedKey = /^users\/[0-9a-f-]+\/(tracks|covers)\/[0-9a-f-]+\.(mp3|m4a|aac|wav|flac|ogg|opus|webm|png|jpg|jpeg|webp)$/;
 export function newObjectKey(userId: string, kind: 'audio' | 'cover', extension: string) {
   return `users/${userId}/${kind === 'audio' ? 'tracks' : 'covers'}/${randomUUID()}.${extension}`;
@@ -30,26 +35,26 @@ function verifyLocal(token: string, purpose: 'put' | 'get', key: string) {
   if (!payload || typeof payload === 'string' || payload.purpose !== purpose || payload.key !== key) throw new Error('Invalid local storage token');
   return payload as { key: string; mime: string; purpose: string };
 }
-export async function signedUpload(key: string, mime: string, _size: number) {
-  if (!client) return `${config.API_PUBLIC_URL}/api/storage/put/${encodeURIComponent(key)}?token=${encodeURIComponent(localToken(key, mime, 'put'))}`;
-  return getSignedUrl(client, new PutObjectCommand({ Bucket: config.R2_BUCKET!, Key: key, ContentType: mime }), { expiresIn: 900 });
+export async function signedUpload(key: string, mime: string, _size: number, backend: StorageBackend = config.STORAGE_DRIVER) {
+  if (backend === 'local') return `${config.API_PUBLIC_URL}/api/storage/put/${encodeURIComponent(key)}?token=${encodeURIComponent(localToken(key, mime, 'put'))}`;
+  return getSignedUrl(r2Client(), new PutObjectCommand({ Bucket: config.R2_BUCKET!, Key: key, ContentType: mime }), { expiresIn: 600 });
 }
-export async function signedRead(key: string, mime: string) {
-  if (!client) return `${config.API_PUBLIC_URL}/api/storage/get/${encodeURIComponent(key)}?token=${encodeURIComponent(localToken(key, mime, 'get'))}`;
-  return getSignedUrl(client, new GetObjectCommand({ Bucket: config.R2_BUCKET!, Key: key, ResponseContentType: mime }), { expiresIn: 3600 });
+export async function signedRead(key: string, mime: string, backend: StorageBackend = config.STORAGE_DRIVER) {
+  if (backend === 'local') return `${config.API_PUBLIC_URL}/api/storage/get/${encodeURIComponent(key)}?token=${encodeURIComponent(localToken(key, mime, 'get'))}`;
+  return getSignedUrl(r2Client(), new GetObjectCommand({ Bucket: config.R2_BUCKET!, Key: key, ResponseContentType: mime }), { expiresIn: 3600 });
 }
-export async function objectSize(key: string): Promise<number> {
-  if (!client) return (await fs.stat(localFile(key))).size;
-  const head = await client.send(new HeadObjectCommand({ Bucket: config.R2_BUCKET!, Key: key }));
+export async function objectSize(key: string, backend: StorageBackend = config.STORAGE_DRIVER): Promise<number> {
+  if (backend === 'local') return (await fs.stat(localFile(key))).size;
+  const head = await r2Client().send(new HeadObjectCommand({ Bucket: config.R2_BUCKET!, Key: key }));
   return head.ContentLength ?? 0;
 }
-export async function deleteObject(key: string) {
-  if (!client) { await fs.rm(localFile(key), { force: true }); return; }
-  await client.send(new DeleteObjectCommand({ Bucket: config.R2_BUCKET!, Key: key }));
+export async function deleteObject(key: string, backend: StorageBackend = config.STORAGE_DRIVER) {
+  if (backend === 'local') { await fs.rm(localFile(key), { force: true }); return; }
+  await r2Client().send(new DeleteObjectCommand({ Bucket: config.R2_BUCKET!, Key: key }));
 }
 /** Only active with STORAGE_DRIVER=local, for local development without cloud credentials. */
 export function localPut(req: Request, res: Response) {
-  if (client) { res.sendStatus(404); return; }
+  // Remains available for signed URLs issued before switching new uploads to R2.
   const key = req.params.key;
   try {
     const payload = verifyLocal(String(req.query.token ?? ''), 'put', key);
@@ -65,7 +70,7 @@ export function localPut(req: Request, res: Response) {
   } catch { res.sendStatus(403); }
 }
 export function localGet(req: Request, res: Response) {
-  if (client) { res.sendStatus(404); return; }
+  // Remains available for signed URLs issued before switching new uploads to R2.
   const key = req.params.key;
   try {
     const payload = verifyLocal(String(req.query.token ?? ''), 'get', key);

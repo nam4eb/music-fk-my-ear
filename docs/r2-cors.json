@@ -1,10 +1,7 @@
 [
   {
-    "AllowedOrigins": [
-      "http://localhost:3000",
-      "https://nam4eb.github.io"
-    ],
-    "AllowedMethods": ["GET", "PUT", "HEAD"],
+    "AllowedOrigins": ["http://localhost:3000", "https://nam4eb.github.io"],
+    "AllowedMethods": ["GET", "HEAD", "PUT"],
     "AllowedHeaders": ["Content-Type", "Range"],
     "ExposeHeaders": ["ETag", "Content-Length", "Content-Range", "Accept-Ranges"],
     "MaxAgeSeconds": 3600

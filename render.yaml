@@ -1,0 +1,42 @@
+# Personal-use staging API. Render Free sleeps after inactivity; for always-on production choose a paid plan.
+# No actual credentials are stored here. Set sync:false values in the Render dashboard.
+services:
+  - type: web
+    name: music-fuq-me-api
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /ready
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: STORAGE_DRIVER
+        value: r2
+      - key: MAX_UPLOAD_MB
+        value: "100"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OWNER_EMAIL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false

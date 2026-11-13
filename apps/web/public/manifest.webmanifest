@@ -1,5 +1,25 @@
 {
-  "id": "./", "name": "VibeBox — Personal Music", "short_name": "VibeBox", "description": "Your private daily music app",
-  "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#10101b", "theme_color": "#10101b",
-  "icons": [ { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" } ]
+  "id": "./",
+  "name": "Music Fuq Me — Private Music",
+  "short_name": "Music Fuq Me",
+  "description": "Your private music collection and smart playlists",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0B1715",
+  "theme_color": "#20534A",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

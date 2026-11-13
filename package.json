@@ -1,6 +1,6 @@
 {
-  "name": "vibebox-fullstack",
-  "version": "2.0.0",
+  "name": "music-fuq-me-fullstack",
+  "version": "2.3.0",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -15,7 +15,10 @@
     "start:api": "npm run start -w @vibebox/api",
     "test": "npm run test -w @vibebox/core",
     "check:core": "npm run typecheck -w @vibebox/core",
-    "build:core": "npm run build -w @vibebox/core"
+    "build:core": "npm run build -w @vibebox/core",
+    "r2:check": "npm run r2:check -w @vibebox/api",
+    "r2:migrate": "npm run r2:migrate -w @vibebox/api --",
+    "test:r2": "npm run test:r2 -w @vibebox/api"
   },
   "engines": {
     "node": ">=22.0.0"

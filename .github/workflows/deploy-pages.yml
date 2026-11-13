@@ -1,4 +1,4 @@
-name: Deploy VibeBox Next static export to GitHub Pages
+name: Deploy Music Fuq Me frontend to GitHub Pages
 on:
   push:
     branches: [main]
@@ -6,6 +6,7 @@ on:
       - 'apps/web/**'
       - 'packages/core/**'
       - 'package.json'
+      - 'apps/api/scripts/r2MigrationPlan.test.mjs'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 permissions:
@@ -25,14 +26,18 @@ jobs:
           node-version: '22'
       - name: Install packages
         run: npm install --no-audit --no-fund
-      - name: Test recommendation engine
-        run: npm test
+      - name: Test recommendation engine and storage migration planner
+        run: |
+          npm test
+          npm run test:r2
       - name: Build core package
         run: npm run build:core
+      - name: Typecheck API
+        run: npm run build:api
       - name: Build Next static site
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_BASE_PATH: /vibebox
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: |
           if [ -z "$NEXT_PUBLIC_API_URL" ]; then echo 'Set GitHub repo variable NEXT_PUBLIC_API_URL before deploy'; exit 1; fi
           npm run build:web

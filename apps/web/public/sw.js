@@ -1,5 +1,5 @@
 /* Lightweight app shell cache. Private API and signed music URLs are deliberately never cached. */
-const CACHE = 'vibebox-static-v2';
+const CACHE = 'music-fuq-me-static-v2-2';
 self.addEventListener('install', event => { self.skipWaiting(); event.waitUntil(caches.open(CACHE)); });
 self.addEventListener('activate', event => { event.waitUntil((async () => { for (const name of await caches.keys()) if (name !== CACHE) await caches.delete(name); await self.clients.claim(); })()); });
 self.addEventListener('fetch', event => {

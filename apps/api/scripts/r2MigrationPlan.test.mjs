@@ -1,0 +1,11 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseMigrationArgs, validateObjectKey, compareRemote, coverMime } from './r2MigrationPlan.mjs';
+test('dry-run by default',()=>assert.equal(parseMigrationArgs([]).apply,false));
+test('migration requires deliberate confirm',()=>assert.throws(()=>parseMigrationArgs(['--apply']),/confirm/));
+test('bounded batches and options',()=>assert.equal(parseMigrationArgs(['--apply','--confirm','--limit=25','--verify-download']).limit,25));
+test('rejects unknown args and zero limit',()=>{assert.throws(()=>parseMigrationArgs(['--foo']));assert.throws(()=>parseMigrationArgs(['--limit=0']));});
+test('validates private user object keys',()=>assert.equal(validateObjectKey('users/12b3/tracks/12b3.mp3'),'users/12b3/tracks/12b3.mp3'));
+test('rejects unsafe paths',()=>{assert.throws(()=>validateObjectKey('../secrets.txt'));assert.throws(()=>validateObjectKey('users/12b3/../../etc/passwd'));});
+test('rejects mismatched R2 remote',()=>{assert.equal(compareRemote({ContentLength:10,Metadata:{sha256:'abc'}},10,'abc'),true);assert.equal(compareRemote({ContentLength:10,Metadata:{sha256:'no'}},10,'abc'),false);});
+test('cover content type',()=>{assert.equal(coverMime('a.png'),'image/png');assert.equal(coverMime('b.webp'),'image/webp');});

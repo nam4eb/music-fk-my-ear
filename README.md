@@ -1,14 +1,30 @@
-# VibeBox 2.0 — Personal Music (Full-stack)
+# Music Fuq Me 2.3 — Personal Music (Full-stack)
 
 A private, mobile-first music app built with **Next.js 16, React 19, Tailwind CSS 4, Express, PostgreSQL, and Cloudflare R2**. Single-owner account. Stream your own audio files via temporary signed URLs, organize by genre/language/mood, create playlists, and get behavior-based Daily Mix recommendations. Shared pure TypeScript recommendation logic is reusable in a later Expo client.
 
-**[Hướng dẫn cài đặt và triển khai đầy đủ (Tiếng Việt)](docs/DEPLOY_VI.md)**
+**[Phase 3 Cloudflare R2 trên Windows (Tiếng Việt)](docs/R2_PHASE3_VI.md)** · [Hướng dẫn ban đầu](docs/DEPLOY_VI.md)
+
+## What is new in 2.3 (R2 cloud phase)
+
+- Safe hybrid `local`/`r2` backend per audio track and cover, PostgreSQL migration `003_r2_hybrid_storage.sql`.
+- Non-destructive and restartable local-to-R2 CLI migration with HEAD/size/SHA256 metadata checks and optional GET byte verification.
+- R2 health probe, owner-only storage counts in Settings, isolated R2 config and Windows deployment instructions.
+- No change to user identity, playlist links or local media until explicitly migrated.
+
+## Features introduced in 2.2
+
+- New **Music Fuq Me** identity: forest-green `#20534A` and mint `#6AC6BC`, including Google sign-in, music player, playlist views, PWA icons and metadata.
+- Select multiple tracks with checkboxes in Library and playlist detail; select all tracks currently visible after filtering.
+- Add selected tracks into existing or new playlists in a bounded batch. Duplicates are skipped.
+- Remove multiple tracks from just a playlist without deleting their files.
+- Delete selected tracks from library/storage with explicit confirmation, and require typing `DELETE` for 100 or more tracks. Existing playlist links cascade automatically.
+- Phase 3 requires SQL 003 and R2 credentials, but never overwrites your current `.env` or media files.
 
 ## What is included
 
 - Responsive dark-mode Next.js UI, English + Vietnamese interface, installable PWA shell, mobile player and desktop controls.
 - Native HTML5 audio playback: play/pause, seek, queue, shuffle, repeat, volume, Media Session API.
-- First-time owner setup protected with a private `SETUP_TOKEN`, password hashed with bcrypt, JWT bearer authentication, API rate limiting.
+- Google Identity Services sign-in. Express verifies Google ID token and only accepts `GOOGLE_OWNER_EMAIL`; existing owner rows are linked without changing the owner ID. API issues its own JWT. API rate limiting remains enabled.
 - Private R2 direct browser uploads (presigned PUT) and streaming (presigned GET), artwork uploads, server-side file existence/length verification; local filesystem driver for development without R2.
 - PostgreSQL metadata, playlists, favorites and listening history. REST CRUD scoped to owner.
 - Deterministic 30-day personalized Daily Mix, mood/time of day suggestions, insights over 7 days. **No AI model or audio analysis claimed.** Filename keyword tagging is conservative and optional/manual.
@@ -20,6 +36,7 @@ A private, mobile-first music app built with **Next.js 16, React 19, Tailwind CS
 apps/web/                  Next.js 16 static export + Tailwind 4 + mobile UI
 apps/api/                  Express API, PostgreSQL, private R2/local storage
 apps/api/sql/001_init.sql  Database schema
+apps/api/sql/002_google_owner_auth.sql  Non-destructive Google auth migration
 packages/core/             Shared domain types, taxonomy, recommendations and tests
 docs/DEPLOY_VI.md          Setup, R2/Neon/Render/Pages deployment guide
 docs/r2-cors.json          Example R2 CORS policy
@@ -30,12 +47,13 @@ docker-compose.yml         Local PostgreSQL 16 (development only)
 ## Quick start
 
 ```bash
-docker compose up -d db
+docker compose up -d db  # host 5433 -> container 5432
 docker compose exec -T db psql -U vibebox -d vibebox < apps/api/sql/001_init.sql
+docker compose exec -T db psql -U vibebox -d vibebox < apps/api/sql/002_google_owner_auth.sql
 npm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.local.example apps/web/.env.local
-# Edit apps/api/.env, set random JWT_SECRET (32+) and SETUP_TOKEN (16+)
+# Edit apps/api/.env, set random JWT_SECRET (32+), GOOGLE_CLIENT_ID and GOOGLE_OWNER_EMAIL
 npm run dev:api  # terminal 1
 npm run dev:web  # terminal 2
 ```
@@ -45,7 +63,11 @@ Open http://localhost:3000. `STORAGE_DRIVER=local` makes uploads functional with
 ## Commands
 
 ```bash
-npm test                     # 7 shared ranking/metadata logic tests
+npm test                     # shared ranking/metadata logic tests
+npm run test:r2              # offline R2 migration safety tests
+npm run r2:check             # live R2 PUT/GET/HEAD/DELETE probe (requires credentials)
+npm run r2:migrate           # default dry-run inventory; see Phase 3 docs
+npm run test:owner -w @vibebox/api  # 3 Google owner policy tests
 npm run build:core           # build shared TypeScript package
 npm run build:web            # Next.js static export -> apps/web/out
 npm run build:api            # TypeScript -> apps/api/dist
@@ -57,9 +79,8 @@ npm run build                # build all
 | Method | Route | Description |
 |---|---|---|
 | GET | `/health` | Health/configured storage mode |
-| GET | `/api/config` | First-user setup status and upload limit |
-| POST | `/api/auth/setup` | Create owner once with setup token |
-| POST | `/api/auth/login` | Login with email/password |
+| GET | `/api/config` | Google client ID, first owner status and upload limit |
+| POST | `/api/auth/google` | Verify Google credential; create/link configured owner only |
 | GET | `/api/auth/me` | Session check |
 | GET | `/api/bootstrap` | Tracks, playlists, listening events |
 | GET | `/api/mixes/daily` | Suggested tracks from history |
@@ -78,8 +99,12 @@ Protected routes require `Authorization: Bearer <JWT>`. Secrets never belong in 
 
 ## Status / limitations
 
-- This archive contains source code and unit tests. A real deployment still requires setting up DB, R2, backend hosting, credentials, migrations and acceptance testing. No production deployment is claimed.
+- This archive contains source code and unit tests. A real deployment still requires setting up DB, R2, backend hosting, credentials, migrations and acceptance testing. Google OAuth is not tested against a real Google Cloud project or database in this archive. No production deployment is claimed.
 - No server-side ffmpeg transcoding/audio fingerprinting or automated audio mood/language detection. Manual tagging and conservative filename hints are available.
 - PWA caches same-origin frontend shell assets, not private cloud music. Offline cloud listening is not implemented yet.
 - Signed URLs expire; request fresh link when resuming a track if it errors.
 - Local test driver is not intended for production. Remaining TODOs: orphan upload cleanup on failed/expired sessions, historical event pagination past 3000 events, multipart uploads >100MB, token revocation/HttpOnly same-origin authentication, native Expo implementation.
+
+## Phase 3 status
+
+Source code, SQL, migration CLI and offline tests are provided. **R2 cloud has not been provisioned or tested live** without the owner’s Cloudflare account credentials and a live PostgreSQL instance. Run the steps in `docs/R2_PHASE3_VI.md` before claiming production readiness.

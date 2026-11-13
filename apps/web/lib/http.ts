@@ -32,5 +32,5 @@ export function sendSignedFile(url: string, file: File, mime: string, onProgress
     xhr.send(file);
   });
 }
-export type AppConfig = { needsSetup: boolean; maxUploadMB: number; storageDriver: 'local' | 'r2' };
+export type AppConfig = { needsSetup: boolean; googleClientId: string; maxUploadMB: number; storageDriver: 'local' | 'r2' };
 export type AuthResult = { token: string; user: { id: string; email: string } };

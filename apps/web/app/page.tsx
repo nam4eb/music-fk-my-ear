@@ -1,2 +1,2 @@
-import VibeBoxApp from '@/components/VibeBoxApp';
-export default function Page() { return <VibeBoxApp />; }
+import MusicFuqMeApp from '@/components/VibeBoxApp';
+export default function Page() { return <MusicFuqMeApp />; }

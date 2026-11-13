@@ -10,3 +10,13 @@ coverage/
 *.log
 .DS_Store
 *.tsbuildinfo
+
+# Production DB backups and exported archives
+backups/
+*.dump
+*.backup
+*.sql.gz
+
+# Locally stored media must never enter GitHub
+.music-uploads/
+apps/api/.music-uploads/

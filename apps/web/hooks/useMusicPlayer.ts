@@ -76,6 +76,18 @@ export function useMusicPlayer(onEvent: EventHandler, onError: (message: string)
     const index = Math.max(0, queue.findIndex(t => t.id === current.id));
     void playTrack(queue[(index - 1 + queue.length) % queue.length], queue);
   }, [current, queue, playTrack]);
+  const forgetTracks = useCallback((ids: string[]) => {
+    const removed = new Set(ids);
+    if (trackRef.current && removed.has(trackRef.current.id)) {
+      requestRef.current++;
+      finishSegment('skip');
+      const a = audioRef.current;
+      if (a) { a.pause(); a.removeAttribute('src'); a.load(); }
+      trackRef.current = null;
+      setCurrent(null); setPlaying(false); setPosition(0); setDuration(0);
+    }
+    setQueue(previous => previous.filter(track => !removed.has(track.id)));
+  }, [finishSegment]);
   const seek = useCallback((seconds: number) => {
     if (audioRef.current && Number.isFinite(seconds)) {
       audioRef.current.currentTime = Math.min(seconds, audioRef.current.duration || seconds);
@@ -109,5 +121,5 @@ export function useMusicPlayer(onEvent: EventHandler, onError: (message: string)
     onEnded: () => { finishSegment('complete'); next(true); },
     onError: () => { if (audioRef.current?.getAttribute('src')) { audioRef.current.removeAttribute('src'); errorRef.current('Cannot play this audio format, or signed URL expired. Try playing again.'); } }
   };
-  return { audio, current, queue, playing, position, duration, volume, shuffle, repeat, playTrack, toggle, next, previous, seek, changeVolume, setShuffle, cycleRepeat };
+  return { audio, current, queue, playing, position, duration, volume, shuffle, repeat, playTrack, toggle, next, previous, seek, changeVolume, setShuffle, cycleRepeat, forgetTracks };
 }

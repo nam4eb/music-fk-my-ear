@@ -1,0 +1,24 @@
+param([Parameter(Mandatory=$true)][string] $DumpFile)
+$ErrorActionPreference = 'Stop'
+$file = (Resolve-Path $DumpFile).Path
+if (-not $file.EndsWith('.dump')) { throw 'Expected a pg_dump custom-format .dump file' }
+$directory = Split-Path $file -Parent
+$name = Split-Path $file -Leaf
+Write-Host 'ONLY restore to a BRAND NEW EMPTY Neon PostgreSQL database; script refuses existing users/tracks tables.'
+# Secret never goes in the GitHub repository or in command-line parameters.
+$secure = Read-Host 'Paste Neon DATABASE_URL (postgresql://...?...sslmode=require)' -AsSecureString
+$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+try {
+  $env:DATABASE_URL = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+  if (-not $env:DATABASE_URL.StartsWith('postgresql://') -or $env:DATABASE_URL -notmatch 'sslmode=require') {
+    throw 'Use the Neon postgres connection string with sslmode=require'
+  }
+  docker run --rm -e DATABASE_URL postgres:16-alpine sh -c 'test "$(psql "$DATABASE_URL" -Atqc "SELECT count(*) FROM pg_tables WHERE schemaname=current_schema()")" = "0"'
+  if ($LASTEXITCODE -ne 0) { throw 'Target DB is not empty or cannot be reached. Refusing restore.' }
+  docker run --rm -e DATABASE_URL -e "DUMP_NAME=$name" -v "${directory}:/backup:ro" postgres:16-alpine sh -c 'pg_restore --no-owner --no-acl --exit-on-error --single-transaction -d "$DATABASE_URL" "/backup/$DUMP_NAME"'
+  if ($LASTEXITCODE -ne 0) { throw 'pg_restore failed. The local DB was not changed.' }
+  Write-Host 'Restored. Verify PostgreSQL counts against check-local-db.ps1 output.'
+} finally {
+  if ($ptr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+  Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+}
